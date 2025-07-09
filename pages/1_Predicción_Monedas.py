@@ -56,7 +56,7 @@ if archivo and moneda in modelos_disponibles:
             name="Histórico (Usuario)",
             line=dict(color="blue"),
             marker=dict(size=6),
-            hovertemplate='Histórico: %{y:.2f}<extra></extra>'
+            hovertemplate='Histórico: %{y:.7f}<extra></extra>'
         ))
 
         # Predicción
@@ -67,7 +67,7 @@ if archivo and moneda in modelos_disponibles:
             name="Predicción (7 días)",
             line=dict(color="red"),
             marker=dict(size=6),
-            hovertemplate='Predicción: %{y:.2f}<extra></extra>'
+            hovertemplate='Predicción: %{y:.7f}<extra></extra>'
         ))
 
         fig.update_layout(

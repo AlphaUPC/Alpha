@@ -20,7 +20,6 @@ def obtener_tipo_modelo(path):
     return TIPOS_MODELOS.get(nombre_archivo, "lstm")
 
 def cargar_modelo(path):
-    """Carga el modelo según su tipo"""
     tipo = obtener_tipo_modelo(path)
     
     if tipo == "lstm":
@@ -32,16 +31,16 @@ def cargar_modelo(path):
 
 def predecir_siguiente_7_dias(df, modelo, lookback):
     df = df[["close", "volume", "marketCap"]].copy()
-    
+
     if len(df) < lookback:
         raise ValueError(f"Se requieren al menos {lookback} días de datos. Actualmente hay {len(df)}.")
-    
-    tipo_modelo = "lstm" 
+
+    tipo_modelo = "lstm"
     if hasattr(modelo, 'predict') and hasattr(modelo, 'n_estimators'):
         tipo_modelo = "random_forest"
     elif hasattr(modelo, 'coef_'):
         tipo_modelo = "linear_regression"
-    
+
     if tipo_modelo == "lstm":
         return _predecir_lstm(df, modelo, lookback)
     elif tipo_modelo == "random_forest":
@@ -49,6 +48,7 @@ def predecir_siguiente_7_dias(df, modelo, lookback):
     elif tipo_modelo == "linear_regression":
         return _predecir_linear_regression(df, modelo, lookback)
 
+#MODELO LSTM
 def _predecir_lstm(df, modelo, lookback):
     scaler_X = MinMaxScaler()
     scaler_y = MinMaxScaler()
@@ -68,7 +68,12 @@ def _predecir_lstm(df, modelo, lookback):
 
         y_scaled_pred = modelo.predict(X_input_reshaped, verbose=0)[0][0]
         y_real = scaler_y.inverse_transform([[y_scaled_pred]])[0][0]
-        predicciones.append(y_real)
+        
+        # Validación para evitar explosiones numéricas
+        if np.abs(y_real) > 1e8:
+            y_real = np.nan
+        
+        predicciones.append(round(y_real, 8))
 
         new_row = pd.DataFrame([[y_real, input_seq.iloc[-1]["volume"], input_seq.iloc[-1]["marketCap"]]],
                                columns=["close", "volume", "marketCap"])
@@ -79,41 +84,53 @@ def _predecir_lstm(df, modelo, lookback):
         "Predicción": predicciones
     })
 
+#MODELO RANDOM FOREST
 def _predecir_random_forest(df, modelo, lookback):
     input_data = df[-lookback:].copy()
     predicciones = []
-    
+
     for _ in range(7):
-        # Para RF usamos las últimas características directamente
         X_input = input_data[["close", "volume", "marketCap"]].values[-1].reshape(1, -1)
         y_pred = modelo.predict(X_input)[0]
-        predicciones.append(y_pred)
-        
-        # Actualizar datos para siguiente predicción
+
+        if np.abs(y_pred) > 1e8:
+            y_pred = np.nan
+
+        predicciones.append(round(y_pred, 8))
+
         new_row = pd.DataFrame([[y_pred, input_data.iloc[-1]["volume"], input_data.iloc[-1]["marketCap"]]],
                                columns=["close", "volume", "marketCap"])
         input_data = pd.concat([input_data.iloc[1:], new_row], ignore_index=True)
-    
+
     return pd.DataFrame({
         "Día": [f"Día {i+1}" for i in range(7)],
         "Predicción": predicciones
     })
 
+#MODELO REGRESIÓN LINEAL (con escalado)
 def _predecir_linear_regression(df, modelo, lookback):
     input_data = df[-lookback:].copy()
     predicciones = []
-    
+
+    scaler_X = MinMaxScaler()
+    X_train = df[["close", "volume", "marketCap"]].values
+    scaler_X.fit(X_train)
+
     for _ in range(7):
-        # Para LR usamos las últimas características
         X_input = input_data[["close", "volume", "marketCap"]].values[-1].reshape(1, -1)
-        y_pred = modelo.predict(X_input)[0]
-        predicciones.append(y_pred)
-        
-        # Actualizar datos para siguiente predicción
+        X_input_scaled = scaler_X.transform(X_input)
+
+        y_pred = modelo.predict(X_input_scaled)[0]
+
+        if np.abs(y_pred) > 1e8:
+            y_pred = np.nan
+
+        predicciones.append(round(y_pred, 8))
+
         new_row = pd.DataFrame([[y_pred, input_data.iloc[-1]["volume"], input_data.iloc[-1]["marketCap"]]],
                                columns=["close", "volume", "marketCap"])
         input_data = pd.concat([input_data.iloc[1:], new_row], ignore_index=True)
-    
+
     return pd.DataFrame({
         "Día": [f"Día {i+1}" for i in range(7)],
         "Predicción": predicciones
