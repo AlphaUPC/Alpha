@@ -8,8 +8,14 @@ st.title("📈 Predicción de Monedas")
 
 monedas = ["Bitcoin", "Ethereum", "Solana", "Cardano", "BNB", "XRP", "Dogecoin", "Polkadot"]
 modelos_disponibles = {
-    "Bitcoin": "modelo/modelo_bitcoin.h5"
-    # Agrega más rutas de modelos aquí
+    "Bitcoin": "modelo/modelo_bitcoin.h5",
+    "Ethereum": "modelo/modelo_ethereum.h5",
+    "Polkadot": "modelo/modelo_polkadot.h5",
+    "Oasis": "modelo/modelo_oasis.h5",
+    "Nervos Network": "modelo/modelo_nervos.h5",
+    "Terra Classic": "modelo/modelo_terra_classic.h5",
+    "The Graph": "modelo/modelo_the_graph.h5",
+    "Algorand": "modelo/modelo_algorand.h5"
 }
 
 archivo = st.file_uploader("📤 Sube tu archivo CSV (últimos 60 días)", type=["csv"])
@@ -19,7 +25,8 @@ if archivo and moneda in modelos_disponibles:
     df = pd.read_csv(archivo, sep=";")
     df = preprocesar_datos(df)
 
-    modelo = cargar_modelo(modelos_disponibles[moneda])
+    modelo_path = modelos_disponibles[moneda]
+    modelo = cargar_modelo(modelo_path)
     st.success("✅ Archivo cargado correctamente. Modelo listo para usar.")
 
     if len(df) < 60:
