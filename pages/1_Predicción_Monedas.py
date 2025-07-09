@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 
 st.title("📈 Predicción de Monedas")
 
-monedas = ["Bitcoin", "Ethereum", "Solana", "Cardano", "BNB", "XRP", "Dogecoin", "Polkadot"]
+monedas = ["Bitcoin", "Ethereum", "Polkadot", "Oasis", "Nervos Network", "Terra Classic", "The Graph", "Algorand"]
 modelos_disponibles = {
     "Bitcoin": "modelo/modelo_bitcoin.h5",
     "Ethereum": "modelo/modelo_ethereum.h5",
